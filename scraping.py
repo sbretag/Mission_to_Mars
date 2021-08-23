@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup as soup
 import pandas as pd
 import datetime as dt
 from webdriver_manager.chrome import ChromeDriverManager
+import time
 
 
 def scrape_all():
@@ -11,7 +12,10 @@ def scrape_all():
     executable_path = {'executable_path': ChromeDriverManager().install()}
     browser = Browser('chrome', **executable_path, headless=True)
 
-    news_title, news_paragraph = mars_news(browser)
+    news_title, news_paragraph = mars_news(browser) 
+
+
+
 
     # Run all scraping functions and store results in a dictionary
     data = {
@@ -19,7 +23,9 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
+        "hemispheres": mars_hemis(browser) ,
         "last_modified": dt.datetime.now()
+    
     }
 
     # Stop webdriver and return data
@@ -97,6 +103,28 @@ def mars_facts():
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
 
+def mars_hemis(browser):
+
+    url_hem = 'https://marshemispheres.com/'
+    browser.visit(url_hem)
+    hemisphere_image_urls = []
+    
+    for x in range(4):
+        time.sleep(3)
+        images = browser.find_by_tag('h3')
+        images[x].click()
+        html = browser.html
+        img_soup = soup(html, 'html.parser')
+        unique_img = img_soup.find("img", class_="wide-image")["src"]
+        img_title = img_soup.find("h2" , class_="title").text
+        img_url = 'https://marshemispheres.com/' + unique_img
+        hems_dictionary = {"title":img_title,"img_url":img_url}
+        hemisphere_image_urls.append(hems_dictionary)
+        browser.back()
+    
+    return hemisphere_image_urls
+
+    
 if __name__ == "__main__":
 
     # If running as script, print scraped data
